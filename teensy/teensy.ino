@@ -1,5 +1,6 @@
 #include <Wire.h>
-#include "../mavlink/include/airserver/mavlink.h"
+//#include "../mavlink/include/airserver/mavlink.h"
+#include "/home/tom/work/recuv/teensy_repo/teensy/mavlink/include/airserver/mavlink.h"
 
 #define SERIAL_PTH Serial1
 #define SERIAL_NAV Serial3
@@ -81,7 +82,8 @@ uint8_t byte_i = 0;
 //  aeroprobe variables
 unsigned long int time_device = 0; 
 unsigned long int date = 0;
-double velocity = 0;
+double true_airspeed = 0;
+double indicated_airspeed = 0;
 double aoa = 0; 
 double aos = 0; 
 double pa = 0; 
@@ -140,6 +142,7 @@ void loop() {
       Serial.write(buf, len);
     }
 
+    /**
     if(vector_read() && Serial.dtr()) {
       
       mavlink_msg_vector_nav_pack(system_type, 
@@ -193,7 +196,7 @@ void loop() {
       Serial.write(buf, len);
       
     }
-   
+   **/
     if(probe_read() && Serial.dtr()) {
       
       mavlink_msg_aeroprobe_pack(system_type,
@@ -202,7 +205,7 @@ void loop() {
                                  time_probe, 
                                  time_device, 
                                  date, 
-                                 velocity, 
+                                 indicated_airspeed, 
                                  aoa, 
                                  aos, 
                                  pa, 
@@ -286,7 +289,7 @@ int pth_read() { //Handle ncar pth serial data
   }
   return 0;
 }
-
+/**
 int vector_read() {
   //Check to see if 4 next bytes are header. If so then start writing to message for parsing
   if(*(uint64_t*)header != EXPECTED_HEADER) {
@@ -326,7 +329,8 @@ int vector_read() {
   } 
   return 0;
 }
-
+**/
+/**
 int vector_parse() {
   timeStartup = *(uint64_t*)message;
   timeGPS = *(uint64_t*)(message + 8);
@@ -373,14 +377,14 @@ int vector_parse() {
   timeGpsPps = *(unsigned long int*)(message+190);
   year = *(int8_t*)(message+191);
   month = *(uint8_t*)(message+192);
-  day = *(*uint8_t)(message+193);
-  hour = *(*uint8_t)(message+194);
-  minute = *(*uint8_t)(message+195);
-  second = *(*uint8_t)(message+196);
-  msecond = *(*uint16_t)(message+198);
+  day = *(uint8_t*)(message+193);
+  hour = *(uint8_t*)(message+194);
+  minute = *(uint8_t*)(message+195);
+  second = *(uint8_t*)(message+196);
+  msecond = *(uint16_t*)(message+198);
   return 1;
 }
-
+**/
 int probe_read() { //Handle probe serial data
   if (SERIAL_PROBE.available() > 0) {
     incomingByte_probe = SERIAL_PROBE.read();
@@ -399,27 +403,30 @@ int probe_read() { //Handle probe serial data
             date = atoll(field_probe);
             break;
           case 2:
-            velocity = atof(field_probe);
+            true_airspeed = atof(field_probe);
             break;
           case 3:
+            indicated_airspeed = atof(field_probe);
+            break;
+          case 4:
             aoa = atof(field_probe);
             if(field_probe[0] == '-') aoa *= -1;
             break;
-          case 4:
+          case 5:
             aos = atof(field_probe);
             if(field_probe[0] == '-') aos *= -1;
             break;
-          case 5:
+          case 6:
             pa = atof(field_probe);
             if(field_probe[0] == '-') pa *= -1;
             break;
-          case 6:
+          case 7:
             ps = atof(field_probe);
             break;
-          case 7:
+          case 8:
             pt = atof(field_probe);
             break;
-          case 8:
+          case 9:
             tc = atof(field_probe);
             if(field_probe[0] == '-') tc *= -1;
             break;
